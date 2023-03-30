@@ -7,10 +7,11 @@ import pyrealsense2 as rs
 
 
 class CratesData:
-    def __init__(self, df: DataFrame, rgb_image, depth_image):
+    def __init__(self, df: DataFrame, rgb_image, depth_image, colorized_depth):
         self.df = df
         self.rgb_image = rgb_image
         self.depth_image = depth_image
+        self.colorized_depth = colorized_depth
         self._append_dataframe_center()
         self._append_dataframe_depth()
 
@@ -57,7 +58,7 @@ class CratesData:
 
         # Get images
         color_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_RGB2BGR)
-        aug_image = cv2.cvtColor(self.depth_image, cv2.COLOR_BGR2GRAY)
+        aug_image = cv2.cvtColor(self.colorized_depth, cv2.COLOR_BGR2GRAY)
 
         # Remove holes
         kernel = np.ones((5, 5), np.uint8)
@@ -98,6 +99,7 @@ class CratesData:
         y_transform = 0  # margin to mitigate the change that the handle of a crate is in the center
         width = 48
         height = 48
+        # return self.depth_image[min(int(center[0]), 639)][min(int(center[1]), 479)]
         return CrateUtils.get_avg_depth(int(center[0]), int(center[1] + y_transform), width, height, self.depth_image)
 
     def sort_by_height(self):

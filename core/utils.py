@@ -47,10 +47,11 @@ class CrateUtils:
 
     @staticmethod
     def get_avg_depth(x, y, width, height, image):
-        # TODO - remove
-        return 10
+        # # TODO - remove
+        # return 10
         # initialize array
         arr = np.zeros((width, height))
+
 
         # make sure the array does not overlap outside of the image
         minX = max(0, int(x - width / 2))
@@ -61,7 +62,8 @@ class CrateUtils:
         # fill array with values
         for i in range(minX, maxX):
             for j in range(minY, maxY):
-                arr[i - minX][j - minY] = image[j][i]
+                val = image[j][i]
+                arr[i - minX][j - minY] = val
 
         arr = arr.flatten()  # flatten 2d array
         arr = arr[arr != 0]  # remove 0's

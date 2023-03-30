@@ -6,5 +6,6 @@ setup(
     description='App controller',
     author='Steph Nützel',
     author_email='stephnutzelgit@gmail.com',
+
     packages=['cratemain'],  # same as name
 )

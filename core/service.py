@@ -70,7 +70,7 @@ class CameraService:
         Logger.debug("Initializing camera...")
         # Get device product line for setting a supporting resolution
         pipeline_wrapper = rs.pipeline_wrapper(pipeline)
-        pipeline_profile = config.resolve(pipeline_wrapper)
+        pipeline_profile = config.resolve(pipeline_wrapper)  # BREAKS HERE
         device = pipeline_profile.get_device()
         device_product_line = str(device.get_info(rs.camera_info.product_line))
 
@@ -82,31 +82,19 @@ class CameraService:
     @staticmethod
     def get_frame(pipeline):
         frames = pipeline.wait_for_frames()
-        # color_frame = frames.get_color_frame()
-        # depth_frame = frames.get_depth_frame()
 
         align = rs.align(rs.stream.color)
         aligned_frames = align.process(frames)
         color_frame = aligned_frames.first(rs.stream.color)
         depth_frame = aligned_frames.get_depth_frame()
 
-        # depth_image = cv2.convertScaleAbs(np.asanyarray(depth_frame.get_data()), alpha=0.03)
-        # normed_image = cv2.normalize(np.asanyarray(depth_frame.get_data()), None, 0, 65536, cv2.NORM_MINMAX, dtype=cv2.CV_16UC1)
-        # colorizor = rs.colorizer()
-        # colorizor.set_option(rs.option.color_scheme, 2)
-        # normed_image = cv2.normalize(np.asanyarray(colorizor.colorize(depth_frame).get_data()), None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_16UC1)
-
         # Colored Image
         color_image = np.asanyarray(color_frame.get_data())
+        depth_image = np.asanyarray(depth_frame.get_data())
 
         # Depth Image
         colorizor = rs.colorizer()
         colorizor.set_option(rs.option.color_scheme, 2)
-        # colorizor.set_option(rs.option.histogram_equalization_enabled, False)
-        # colorizor.set_option(rs.option.min_distance, 0.2)
-        # colorizor.set_option(rs.option.min_distance, 2)
         colorizor_depth = np.asanyarray(colorizor.colorize(depth_frame).get_data(), dtype=np.uint8)
 
-        # if not normed_image or not color_frame:
-        #     return False, None, None
-        return True, colorizor_depth, color_image
+        return True, depth_image, color_image, colorizor_depth

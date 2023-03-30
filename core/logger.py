@@ -18,7 +18,7 @@ class LogType(Enum):
 
 class Logger:
 
-    is_debug = False
+    is_debug = True
 
     @staticmethod
     def system(message: str):
