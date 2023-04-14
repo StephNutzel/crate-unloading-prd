@@ -3,13 +3,17 @@ from core.utils import CrateUtils
 import cv2
 import numpy as np
 import math
+from core.logger import Logger
 import pyrealsense2 as rs
+import time
+from matplotlib import pyplot as plt
+from PIL import Image
 
 
 class CratesData:
-    def __init__(self, df: DataFrame, rgb_image, depth_image, colorized_depth):
+    def __init__(self, df: DataFrame, color_image, depth_image, colorized_depth):
         self.df = df
-        self.rgb_image = rgb_image
+        self.color_image = color_image
         self.depth_image = depth_image
         self.colorized_depth = colorized_depth
         self._append_dataframe_center()
@@ -18,8 +22,8 @@ class CratesData:
     def find_contours(self, aug_image):
         contours, hierarchy = cv2.findContours(aug_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if len(contours) is 0:
-            input("Error not box found!")
-            return True
+            Logger.error("Error contours not found!")
+            return None, None
         max_contour = max(contours, key=cv2.contourArea)  # Find the largest contour (hopefully the crate)
         x, y, w, h = cv2.boundingRect(max_contour)
 
@@ -28,12 +32,13 @@ class CratesData:
         box = cv2.boxPoints(rect)
         box = np.int0(box)
 
-        return box, x, y, w, h
+        return box, [x, y, w, h]
 
-    def find_angle_center(self, box):
+    def _find_angle_center(self, box):
         angle: float
         point_a: tuple = None
         point_b: tuple = None
+        # Get the top two points
         for point in box:
             if point_a is None:
                 point_a = point
@@ -41,45 +46,79 @@ class CratesData:
             if point_b is None:
                 point_b = point
                 continue
-            if point[1] < point_a[1]:
-                p_temp = point_a
-                point_a = point
-                point = p_temp
             if point[1] < point_b[1]:
+                p_temp = point_b
                 point_b = point
+                point = p_temp
+            if point[1] < point_a[1]:
+                point_a = point
 
-        center: tuple = ((point_a[0] - point_b[0]) / 2 + point_a[0], abs(point_a[1] - point_b[1]) / 2 + point_a[1])
+        center: tuple = (((point_b[0] - point_a[0]) / 2) + point_a[0], ((point_b[1] - point_a[1]) / 2 + point_a[1]))
         angle = (math.atan2((point_b[0] - point_a[0]), abs(point_b[1] - point_a[1])) * 180 / math.pi)
         angle = (angle / abs(angle)) * (90 - abs(angle))
         print(f"Angle: {angle}")
         return angle, center
 
-    def get_pickup_data(self):
-
+    def get_pickup_data(self, data):
         # Get images
-        color_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_RGB2BGR)
-        aug_image = cv2.cvtColor(self.colorized_depth, cv2.COLOR_BGR2GRAY)
+        color_image = cv2.cvtColor(np.uint8(self.color_image), cv2.COLOR_RGB2BGR)
+        aug_image = cv2.cvtColor(np.uint8(self.colorized_depth), cv2.COLOR_RGB2GRAY)
+
+        # bounding box position from ML detection
+        elem = data
+
+        # for index, elem in self.df.iterrows():
+        p1 = [max(int(CrateUtils.get_x_min(elem)) + 100, 0), max(int(CrateUtils.get_y_min(elem)) + 10, 0)]
+        # p2 = [min(int(CrateUtils.get_x_max(elem))-50, 640), min(int(CrateUtils.get_y_max(elem))-10, 480)]
+        p2 = [min(int(CrateUtils.get_x_max(elem)) - 100, 640), min(int(CrateUtils.get_y_max(elem)) - 10, 480)]
+        # break
+
+        Logger.debug(f"Point 1: {p1}")
+        Logger.debug(f"Point 2: {p2}")
+
+        # create a mask using highest crate bounding box loacation
+        mask = np.zeros(aug_image.shape[:2], np.uint8)
+        # mask[max(p1[0], 0):max(p2[0], 0), min(p1[1], 480):min(p2[1], 640)] = 255
+        # mask[p1[0]:p1[1], p2[0]:p2[1]] = 255
+        mask[0:p2[1], p1[0]:p2[0]] = 255
+
+        # compute the bitwise AND using the mask
+        masked_img = cv2.bitwise_and(aug_image, aug_image, mask=mask)
+
+        # gaussian blur
+        blur = cv2.GaussianBlur(masked_img, (7, 7), cv2.BORDER_DEFAULT)
+
+        # thresh
+        # ret, thresh = cv2.threshold(blur, 210, 255, cv2.THRESH_TRUNC)
+
+        # binary thresh
+        ret, binary_image = cv2.threshold(blur, 50, 255, cv2.THRESH_BINARY)
 
         # Remove holes
-        kernel = np.ones((5, 5), np.uint8)
-        aug_image = cv2.morphologyEx(aug_image, cv2.MORPH_OPEN, kernel)
-        aug_image = cv2.morphologyEx(aug_image, cv2.MORPH_CLOSE, kernel)
+        kernel_close = np.ones((7, 7), np.uint8)
+        binary_image = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, kernel_close)
+
+        kernel_open = np.ones((7, 7), np.uint8)
+        binary_image = cv2.morphologyEx(binary_image, cv2.MORPH_OPEN, kernel_open)
+
+        # aug_image[:, :, 0], aug_image[:, :, 2] = aug_image[:, :, 2], aug_image[:, :, 0].copy()
+
+        # image: Image = Image.fromarray(thresh.astype('uint8'))
+        # image.show("test1")
+        # image: Image = Image.fromarray(binary_image.astype('uint8'))
+        # image.show("test2")
 
         # Find contours
-        box, x, y, w, h = self.find_contours(aug_image)
+        box, bounding_box = self.find_contours(binary_image)
+        if (box is None):
+            return None, None
+
+        Logger.info(box)
 
         # find angle and
-        angle, center = self.find_angle_center(box)
+        angle, center = self._find_angle_center(box)
 
-        aug_image = cv2.cvtColor(aug_image, cv2.COLOR_GRAY2RGB)
-        cv2.drawContours(aug_image, [box], 0, (0, 0, 255), 4)
-        cv2.rectangle(aug_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.imshow("Box", aug_image)
-
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            return False
-        return True
+        return angle, center
 
     def _append_dataframe_center(self):
         center_point = []
@@ -103,7 +142,7 @@ class CratesData:
         return CrateUtils.get_avg_depth(int(center[0]), int(center[1] + y_transform), width, height, self.depth_image)
 
     def sort_by_height(self):
-        self.df.sort_values(by=['center_y'], ascending=False, inplace=True)
+        self.df.sort_values(by=['ymax'], ascending=True, inplace=True)
 
     def get(self, index):
         return self.df.iloc[index]

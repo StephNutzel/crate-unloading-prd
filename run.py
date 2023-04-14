@@ -15,10 +15,11 @@ except RuntimeError as e:
 # Update app
 if started:
     Logger.system("Started")
+    restart = True
 
     while running:
         try:
-            running = app.update()
+            restart = app.update()
         except RuntimeError as e:
             Logger.error(e)
             running = False

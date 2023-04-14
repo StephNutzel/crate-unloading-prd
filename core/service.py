@@ -89,7 +89,7 @@ class CameraService:
         depth_frame = aligned_frames.get_depth_frame()
 
         # Colored Image
-        color_image = np.asanyarray(color_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data(), dtype=np.uint8)
         depth_image = np.asanyarray(depth_frame.get_data())
 
         # Depth Image

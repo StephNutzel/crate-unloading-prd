@@ -1,5 +1,8 @@
 import socket
+import time
+
 from core.logger import Logger
+
 
 # Set up socket connection
 
@@ -9,6 +12,7 @@ class SocketServer:
         self.addr = None
         self.socket = None
         self.open_connection()
+
     def open_connection(self):
         Logger.info("Opening socket connection...")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,22 +36,40 @@ class SocketServer:
         Logger.debug("cmd: movel")
         self.sendCommand(f"movel:{coords}")
 
+    def moveLR(self, coords: list):
+        Logger.debug("cmd: movelr")
+        self.sendCommand(f"movelr:{coords}")
+
     def moveCoords(self, coords):
         Logger.debug("cmd: move_coords")
         self.sendCommand(f"move_coords:{coords}")
 
+    def get_tcp(self):
+        Logger.debug("cmd: get")
+        data = self.sendCommand('get:tcp')
+        data = data[2:-5]
+        arr = data.split(",")
+        arr = [float(x) for x in arr]
+        return arr
+
     def sendCommand(self, command, blocking=True):
+        last_time = time.time()
         try:
             self.conn.sendall(command.encode())
         except:
             Logger.debug("Send command failed, reopening connection")
             self.open_connection()
             self.conn.sendall(command.encode())
-        while blocking:
-            data = self.conn.recv(1024).decode()
-            if not data:
-                continue
-            Logger.debug(f"Socket recieved: {data}")
-            break
-
-
+        try:
+            while blocking:
+                data = self.conn.recv(1024).decode()
+                if not data:
+                    time_elapsed = time.time() - last_time
+                    if (time_elapsed >= 15):
+                        self.open_connection()
+                        last_time = time.time()
+                    continue
+                Logger.debug(f"Socket recieved: {data}")
+                return data
+        except:
+            return
