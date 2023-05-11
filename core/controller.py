@@ -72,65 +72,10 @@ class RobotCommunicator:
         Logger.debug("set: pause")
         self.server.sendCommand(f"set:pause")
 
-    # def goto_conveyor(self):
-    #     self.server.moveJ(self.get_conveyor_pose())
-
     def cam_to_world_coords(self, pos):
         tcp = self.server.get_tcp()
         return [tcp[0] + pos[0], tcp[1] + pos[2], tcp[2] - pos[1], tcp[3], tcp[4], tcp[5]]
 
-    # def cam_to_world_coords(self, pos):
-    #     tcp = self.get_home_pose()
-    #     new_pose = robomath.transl(pos[0], pos[1], pos[2]) * \
-    #                robomath.rotx(tcp[3] * (math.pi) / 180) * \
-    #                robomath.roty(tcp[4] * (math.pi) / 180) * \
-    #                robomath.rotz(tcp[5] * (math.pi / 180))
-    #
-    #     # homogeneous_coord = np.ones(4)
-    #     # homogeneous_coord[:3] = camera_coord
-    #     # base_coord = np.matmul(trans_matrix, homogeneous_coord)
-    #     # base_coord = base_coord[:3]
-    #     # return [base_coord[2], base_coord[1], base_coord[0]]
-    #
-    # return new_pose
-
-    # def cam_to_world_coords(self, pos):
-    #     tcp_pose = self.get_home_tcp()
-    #     camera_pos = np.array([tcp_pose[0], tcp_pose[1], tcp_pose[2]])  # en mètres
-    #     camera_orientation = np.array(
-    #         [tcp_pose[3] / 180 * math.pi, tcp_pose[4] / 180 * math.pi, tcp_pose[5] / 180 * math.pi])  # en radians
-    #
-    #     mat_z = np.array([[np.cos(camera_orientation[2]), -np.sin(camera_orientation[2]), 0],
-    #                       [np.sin(camera_orientation[2]), np.cos(camera_orientation[2]), 0],
-    #                       [0, 0, 1]])
-    #     mat_y = np.array([[np.cos(camera_orientation[0]), 0, np.sin(camera_orientation[0])],
-    #                       [0, 1, 0],
-    #                       [-np.sin(camera_orientation[0]), 0, np.cos(camera_orientation[0])]])
-    #     mat_x = np.array([[1, 0, 0],
-    #                       [0, np.cos(-camera_orientation[1]), -np.sin(-camera_orientation[1])],
-    #                       [0, np.sin(-camera_orientation[1]), np.cos(-camera_orientation[1])]])
-    #
-    #     rot_matrix = mat_x
-    #     rot_matrix = np.matmul(rot_matrix, mat_y)
-    #     rot_matrix = np.matmul(rot_matrix, mat_z)
-    #
-    #     trans_matrix = np.eye(4)
-    #     trans_matrix[:3, :3] = rot_matrix
-    #     trans_matrix[:3, 3] = camera_pos
-    #     trans_matrix = np.linalg.inv(trans_matrix)
-    #
-    #     # Coordonnées de l'objet vue par la caméra dans le système de coordonnées de la caméra
-    #     camera_coord = np.array([pos[0], pos[1], pos[2]])
-    #
-    #     # Convertir la coordonnée dans le système de coordonnées de la base du robot
-    #     homogeneous_coord = np.ones(4)
-    #     homogeneous_coord[:3] = camera_coord
-    #     base_coord = np.matmul(trans_matrix, homogeneous_coord)
-    #     base_coord = base_coord[:3]
-    #     return [base_coord[2], base_coord[1], base_coord[0]]
-
-
-# z = x or y (it is left or right)
 
 class RobotController:
     def __init__(self):

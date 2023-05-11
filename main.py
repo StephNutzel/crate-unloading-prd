@@ -35,14 +35,7 @@ class App:
         return True
 
     def update(self):
-        # self.robotComm.server.moveJ([89.1, 83.0, 111.2, 179.1, 104.2, -180.2])
-        # data, results, crates_data = self.search_crate()
-        # angle, center = crates_data.get_pickup_data(data)
-        # Logger.info(f"Angle: {angle}, Center: {center}")
-        # return wait_input()
-
         self.robotComm.goto_home()
-        # tcp = self.robotComm.server.get_tcp()
 
         poses = self.robotComm.get_serpent_poses()
         counter = 0
@@ -72,7 +65,6 @@ class App:
         if crates_data.df.size == 0:
             return None, None, None
 
-
         # If crate found, go infront of crate
         for index, data in crates_data.df.iterrows():
             Logger.info(f"depth: {data['depth']}")
@@ -86,17 +78,15 @@ class App:
             return data, new_results, crates_data_new
         return None, None, None
 
-
     def find_pickable_crate(self):
         results, crates_data = self.get_image()
         if crates_data.df.size == 0:
             return None, None, None
         for index, data in crates_data.df.iterrows():
-            if data['xmax']-data['xmin'] < 200 or data['ymax']-data['ymin'] < 100:
+            if data['xmax'] - data['xmin'] < 200 or data['ymax'] - data['ymin'] < 100:
                 continue
             return data, results, crates_data
         return None, None, None
-
 
     def get_image(self):
         depth_image, color_image, colorized_depth = self.camera.get_image()
@@ -108,7 +98,6 @@ class App:
         crates_data.sort_by_height()
         return results, crates_data
 
-
     def pickup_crate(self, data, center, angle):
         data['center_x'] = center[0]
         data['center_y'] = center[1]
@@ -118,9 +107,7 @@ class App:
         Logger.debug(f"Cam: {cam_coords}")
         world_coords = self.robotComm.cam_to_world_coords(cam_coords)
         Logger.debug(f"World: {world_coords}\n")
-        # self.robotComm.server.moveL(world_coords)
         self.robotComm.approach_crate(world_coords)
-
 
     def stop(self):
         del self.camera

@@ -47,11 +47,8 @@ class CrateUtils:
 
     @staticmethod
     def get_avg_depth(x, y, width, height, image):
-        # # TODO - remove
-        # return 10
         # initialize array
         arr = np.zeros((width, height))
-
 
         # make sure the array does not overlap outside of the image
         minX = max(0, int(x - width / 2))
@@ -68,10 +65,6 @@ class CrateUtils:
         arr = arr.flatten()  # flatten 2d array
         arr = arr[arr != 0]  # remove 0's
         hist, bins = np.histogram(arr.flatten(), bins=12)  # histogram and bins
-
-        # print(f"Array: {arr.flatten()}")
-        # print(f"Histogram: {hist}")
-        # print(f"Bins: {bins}")
 
         most_common_index = np.argmax(hist)
         most_common_value = bins[most_common_index]

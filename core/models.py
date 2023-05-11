@@ -78,8 +78,6 @@ class CratesData:
 
         # create a mask using highest crate bounding box loacation
         mask = np.zeros(aug_image.shape[:2], np.uint8)
-        # mask[max(p1[0], 0):max(p2[0], 0), min(p1[1], 480):min(p2[1], 640)] = 255
-        # mask[p1[0]:p1[1], p2[0]:p2[1]] = 255
         mask[0:p2[1], p1[0]:p2[0]] = 255
 
         # compute the bitwise AND using the mask
@@ -87,9 +85,6 @@ class CratesData:
 
         # gaussian blur
         blur = cv2.GaussianBlur(masked_img, (7, 7), cv2.BORDER_DEFAULT)
-
-        # thresh
-        # ret, thresh = cv2.threshold(blur, 210, 255, cv2.THRESH_TRUNC)
 
         # binary thresh
         ret, binary_image = cv2.threshold(blur, 50, 255, cv2.THRESH_BINARY)
@@ -100,13 +95,6 @@ class CratesData:
 
         kernel_open = np.ones((7, 7), np.uint8)
         binary_image = cv2.morphologyEx(binary_image, cv2.MORPH_OPEN, kernel_open)
-
-        # aug_image[:, :, 0], aug_image[:, :, 2] = aug_image[:, :, 2], aug_image[:, :, 0].copy()
-
-        # image: Image = Image.fromarray(thresh.astype('uint8'))
-        # image.show("test1")
-        # image: Image = Image.fromarray(binary_image.astype('uint8'))
-        # image.show("test2")
 
         # Find contours
         box, bounding_box = self.find_contours(binary_image)

@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class LogColors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -11,13 +12,14 @@ class LogColors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
 class LogType(Enum):
     WARNING = 0,
     INFO = 1,
     ERROR = 2
 
-class Logger:
 
+class Logger:
     is_debug = True
 
     @staticmethod
@@ -44,4 +46,3 @@ class Logger:
     def debug(message: str):
         if Logger.is_debug:
             print(f"{LogColors.OKGREEN}Debug: {message}{LogColors.ENDC}")
-
